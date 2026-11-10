@@ -1,0 +1,154 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover"><title>FindMap</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:#000;color:#fff;font:15px system-ui,sans-serif;overflow:hidden}
+#map{position:absolute;inset:0;background:#000}
+button,select,input{font:inherit;color:#fff;border:0;outline:0}
+button{border-radius:14px;padding:13px 20px;background:rgba(255,255,255,.14)}
+.g{background:#10B981;color:#03150e;font-weight:700}.r{background:#EF4444}
+.gl{background:rgba(22,22,26,.74);-webkit-backdrop-filter:blur(24px);backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,.1)}
+.sc{position:fixed;inset:0;z-index:2000;background:#000;display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:28px;text-align:center}
+.sc.on{display:flex}
+#gb{display:none;flex-direction:column;gap:10px;width:100%;max-width:300px}.need #gb{display:flex}
+#gear,#loc{position:fixed;z-index:1001;top:calc(env(safe-area-inset-top) + 12px);width:46px;height:46px;border-radius:50%;padding:0;font-size:21px}
+#gear{right:12px}#loc{left:12px}
+#sh{position:fixed;left:0;right:0;bottom:0;z-index:1000;max-height:62%;display:flex;flex-direction:column;gap:8px;padding:8px 14px calc(14px + env(safe-area-inset-bottom));border-radius:24px 24px 0 0;transition:transform .3s}
+#sh.min{transform:translateY(calc(100% - 100px))}.nav #sh{transform:translateY(110%)}
+#hn{width:40px;height:5px;border-radius:3px;background:rgba(255,255,255,.3);margin:2px auto 4px;flex:none}
+#bar{display:flex;gap:8px;flex:none}#q{flex:1;min-width:0;padding:13px 16px;border-radius:14px;background:rgba(255,255,255,.1)}
+#bar button{padding:0 16px;background:#10B981;color:#03150e;font-weight:700}
+#ch{display:flex;gap:8px;overflow-x:auto;flex:none;scrollbar-width:none}
+#ch button{padding:8px 13px;border-radius:99px;white-space:nowrap;font-size:14px}
+#ms{font-size:14px;color:#a7f3d0;flex:none;min-height:18px}
+#ls{overflow-y:auto;flex:1}
+.row{display:flex;gap:10px;align-items:center;padding:11px 4px;border-top:1px solid rgba(255,255,255,.08)}
+.row div{flex:1;min-width:0}.row small{display:block;color:#9ca3af;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.row em{font-style:normal;color:#10B981;font-weight:600}
+#card{display:none;position:fixed;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom));z-index:1100;padding:18px;border-radius:24px;flex-direction:column;gap:10px}
+#card.on{display:flex}#card button.g{padding:16px;font-size:16px;border-radius:16px}
+#x{position:absolute;top:10px;right:10px;padding:6px 12px;border-radius:50%}
+#card p,#cm{color:#9ca3af}#cn{padding-right:36px}
+#hud{display:none;position:fixed;top:calc(env(safe-area-inset-top) + 10px);left:10px;right:10px;z-index:1200;padding:12px 14px;border-radius:20px;align-items:center;justify-content:space-between;gap:12px}
+.nav #hud{display:flex}.nav #gear,.nav #loc{display:none}
+#hd{font-size:28px;color:#10B981;display:block}#hud small{color:#9ca3af}
+.pn{width:18px;height:18px;border-radius:50%;background:#fff;border:4px solid #000;box-shadow:0 0 0 2px #fff}
+.me{width:20px;height:20px;border-radius:50%;background:#3B82F6;border:3px solid #fff;box-shadow:0 0 0 8px rgba(59,130,246,.28)}
+select{width:100%;max-width:340px;padding:14px;border-radius:14px;background:#1c1c1f}
+</style></head><body>
+<div id="map"></div>
+<button id="gear" class="gl">⚙</button><button id="loc" class="gl">➤</button>
+<div id="hud" class="gl"><div><b id="hd"></b><small id="he"></small></div><button id="sp" class="r"></button></div>
+<div id="card" class="gl"><button id="x">✕</button><h2 id="cn"></h2><p id="ca"></p><div id="cm"></div><button id="go" class="g"></button></div>
+<div id="sh" class="gl"><div id="hn"></div><div id="bar"><input id="q" autocomplete="off"><button id="send">↑</button></div><div id="ch"></div><div id="ms"></div><div id="ls"></div></div>
+<div id="set" class="sc"><h2 id="t1"></h2><select id="lng"></select><select id="cty"></select><small style="color:#6b7280">© OpenStreetMap contributors · © CARTO</small><button id="cl">✕</button></div>
+<div id="ar" class="sc" style="z-index:2100"><div style="font-size:64px">✅</div><h1 id="at"></h1><button class="g" id="ok">OK</button></div>
+<div id="gate" class="sc on"><svg viewBox="0 0 100 130" width="120"><path d="M50 4C26 4 8 22 8 45c0 28 30 62 42 81C62 107 92 73 92 45 92 22 74 4 50 4z" fill="#fff"/><circle cx="50" cy="46" r="30" fill="#000"/><circle cx="50" cy="46" r="17" fill="none" stroke="#fff" stroke-width="3"/><circle cx="50" cy="46" r="4" fill="#fff"/><path d="M50 12v16M50 64v16M16 46h16M68 46h16" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg>
+<h1 style="font-size:32px;letter-spacing:1px">FindMap</h1><p id="t0" style="color:#9ca3af"></p><div id="gb"><button id="b0" class="g"></button><button id="b1"></button></div></div>
+<script>
+const D={az:'Azərbaycanca|Dəqiq GPS icazəsi tələb olunur|İcazə ver|Ayarlar|FindMap-dən soruş…|Yaşıl marşrutu başlat|Marşrutu dayandır|Çatdınız!|Yaxında heç nə tapılmadı',
+en:'English|Precise GPS access is required|Allow location|Settings|Ask FindMap…|Start Green Route|Stop Route|You have arrived!|Nothing found nearby',
+tr:'Türkçe|Hassas GPS izni gerekli|Konuma izin ver|Ayarlar|FindMap\'e sor…|Yeşil Rotayı Başlat|Rotayı Durdur|Vardınız!|Yakında sonuç bulunamadı',
+ru:'Русский|Нужен точный доступ к GPS|Разрешить геолокацию|Настройки|Спросите FindMap…|Начать зелёный маршрут|Остановить маршрут|Вы прибыли!|Поблизости ничего не найдено',
+de:'Deutsch|Genauer GPS-Zugriff erforderlich|Standort erlauben|Einstellungen|FindMap fragen…|Grüne Route starten|Route beenden|Sie sind angekommen!|Nichts in der Nähe gefunden',
+fr:'Français|Accès GPS précis requis|Autoriser la position|Réglages|Demandez à FindMap…|Démarrer l\'itinéraire vert|Arrêter l\'itinéraire|Vous êtes arrivé !|Rien trouvé à proximité',
+es:'Español|Se requiere acceso GPS preciso|Permitir ubicación|Ajustes|Pregunta a FindMap…|Iniciar ruta verde|Detener ruta|¡Has llegado!|No hay resultados cerca',
+it:'Italiano|Serve l\'accesso GPS preciso|Consenti posizione|Impostazioni|Chiedi a FindMap…|Avvia percorso verde|Interrompi percorso|Sei arrivato!|Nulla nelle vicinanze',
+pt:'Português|Acesso GPS preciso necessário|Permitir localização|Definições|Pergunte ao FindMap…|Iniciar rota verde|Parar rota|Você chegou!|Nada encontrado por perto',
+nl:'Nederlands|Nauwkeurige GPS-toegang vereist|Locatie toestaan|Instellingen|Vraag FindMap…|Groene route starten|Route stoppen|Je bent aangekomen!|Niets gevonden in de buurt',
+pl:'Polski|Wymagany dokładny dostęp do GPS|Zezwól na lokalizację|Ustawienia|Zapytaj FindMap…|Rozpocznij zieloną trasę|Zatrzymaj trasę|Jesteś na miejscu!|Nic nie znaleziono w pobliżu',
+uk:'Українська|Потрібен точний доступ до GPS|Дозволити геолокацію|Налаштування|Запитайте FindMap…|Почати зелений маршрут|Зупинити маршрут|Ви прибули!|Поблизу нічого не знайдено',
+ar:'العربية|مطلوب الوصول الدقيق إلى GPS|السماح بالموقع|الإعدادات|اسأل FindMap…|ابدأ المسار الأخضر|إيقاف المسار|لقد وصلت!|لا نتائج قريبة',
+fa:'فارسی|دسترسی دقیق به GPS لازم است|اجازه موقعیت|تنظیمات|از FindMap بپرسید…|شروع مسیر سبز|توقف مسیر|رسیدید!|چیزی در نزدیکی پیدا نشد',
+hi:'हिन्दी|सटीक GPS अनुमति आवश्यक है|लोकेशन की अनुमति दें|सेटिंग्स|FindMap से पूछें…|ग्रीन रूट शुरू करें|रूट रोकें|आप पहुँच गए!|आस-पास कुछ नहीं मिला',
+zh:'中文|需要精确的GPS权限|允许定位|设置|询问 FindMap…|开始绿色路线|停止路线|您已到达！|附近没有结果',
+ja:'日本語|正確なGPSの許可が必要です|位置情報を許可|設定|FindMapに質問…|グリーンルート開始|ルート停止|到着しました！|近くに見つかりません',
+ko:'한국어|정확한 GPS 권한이 필요합니다|위치 허용|설정|FindMap에게 물어보세요…|그린 경로 시작|경로 중지|도착했습니다!|근처에 결과가 없습니다',
+id:'Indonesia|Akses GPS akurat diperlukan|Izinkan lokasi|Pengaturan|Tanya FindMap…|Mulai Rute Hijau|Hentikan Rute|Anda telah tiba!|Tidak ada hasil di sekitar',
+vi:'Tiếng Việt|Cần quyền GPS chính xác|Cho phép vị trí|Cài đặt|Hỏi FindMap…|Bắt đầu lộ trình xanh|Dừng lộ trình|Bạn đã đến nơi!|Không tìm thấy gần đây',
+th:'ไทย|ต้องใช้สิทธิ์ GPS แบบแม่นยำ|อนุญาตตำแหน่ง|การตั้งค่า|ถาม FindMap…|เริ่มเส้นทางสีเขียว|หยุดเส้นทาง|คุณมาถึงแล้ว!|ไม่พบสิ่งใดใกล้เคียง',
+he:'עברית|נדרשת גישה מדויקת ל-GPS|אפשר מיקום|הגדרות|שאל את FindMap…|התחל מסלול ירוק|עצור מסלול|הגעת!|לא נמצא דבר בקרבת מקום',
+ka:'ქართული|საჭიროა GPS-ზე ზუსტი წვდომა|მდებარეობის დაშვება|პარამეტრები|ჰკითხეთ FindMap-ს…|მწვანე მარშრუტის დაწყება|მარშრუტის შეჩერება|თქვენ მიხვედით!|ახლოს ვერაფერი მოიძებნა',
+kk:'Қазақша|Нақты GPS рұқсаты қажет|Орынды рұқсат ету|Параметрлер|FindMap-тен сұраңыз…|Жасыл бағытты бастау|Бағытты тоқтату|Сіз жеттіңіз!|Жақын маңда ештеңе табылмады',
+uz:'Oʻzbekcha|Aniq GPS ruxsati kerak|Joylashuvga ruxsat berish|Sozlamalar|FindMap\'dan so\'rang…|Yashil marshrutni boshlash|Marshrutni to\'xtatish|Siz yetib keldingiz!|Atrofda hech narsa topilmadi',
+ro:'Română|Este necesar accesul GPS precis|Permite locația|Setări|Întreabă FindMap…|Pornește ruta verde|Oprește ruta|Ai ajuns!|Nimic găsit în apropiere',
+cs:'Čeština|Vyžadován přesný přístup k GPS|Povolit polohu|Nastavení|Zeptejte se FindMap…|Spustit zelenou trasu|Zastavit trasu|Dorazili jste!|Nic v okolí nenalezeno',
+el:'Ελληνικά|Απαιτείται ακριβής πρόσβαση GPS|Να επιτρέπεται η τοποθεσία|Ρυθμίσεις|Ρωτήστε το FindMap…|Έναρξη πράσινης διαδρομής|Διακοπή διαδρομής|Φτάσατε!|Δεν βρέθηκε τίποτα κοντά',
+sv:'Svenska|Exakt GPS-åtkomst krävs|Tillåt plats|Inställningar|Fråga FindMap…|Starta grön rutt|Stoppa rutten|Du har anlänt!|Inget hittades i närheten',
+hu:'Magyar|Pontos GPS-hozzáférés szükséges|Helymeghatározás engedélyezése|Beállítások|Kérdezd a FindMap-et…|Zöld útvonal indítása|Útvonal leállítása|Megérkeztél!|Nincs találat a közelben',
+bg:'Български|Необходим е точен достъп до GPS|Разреши местоположение|Настройки|Попитай FindMap…|Старт на зеления маршрут|Спри маршрута|Пристигнахте!|Наблизо няма резултати',
+sr:'Српски|Потребан је тачан приступ GPS-у|Дозволи локацију|Подешавања|Питај FindMap…|Покрени зелену руту|Заустави руту|Стигли сте!|Ништа није пронађено у близини',
+da:'Dansk|Præcis GPS-adgang kræves|Tillad placering|Indstillinger|Spørg FindMap…|Start grøn rute|Stop ruten|Du er ankommet!|Intet fundet i nærheden',
+fi:'Suomi|Tarkka GPS-käyttö vaaditaan|Salli sijainti|Asetukset|Kysy FindMapilta…|Aloita vihreä reitti|Pysäytä reitti|Olet perillä!|Läheltä ei löytynyt mitään',
+no:'Norsk|Nøyaktig GPS-tilgang kreves|Tillat posisjon|Innstillinger|Spør FindMap…|Start grønn rute|Stopp ruten|Du er fremme!|Ingenting funnet i nærheten'};
+const Z='Azerbaijan 40.4 49.9,Turkey 39.9 32.9,Russia 55.8 37.6,Georgia 41.7 44.8,Kazakhstan 51.2 71.4,Uzbekistan 41.3 69.3,Ukraine 50.5 30.5,Germany 52.5 13.4,France 48.9 2.35,Spain 40.4 -3.7,Italy 41.9 12.5,Portugal 38.7 -9.1,Netherlands 52.4 4.9,Poland 52.2 21,United Kingdom 51.5 -0.1,Ireland 53.35 -6.3,Sweden 59.3 18.1,Norway 59.9 10.75,Denmark 55.7 12.6,Finland 60.2 24.9,Romania 44.4 26.1,Czechia 50.1 14.4,Greece 38 23.7,Hungary 47.5 19.05,Bulgaria 42.7 23.3,Serbia 44.8 20.5,United States 38.9 -77,Canada 45.4 -75.7,Mexico 19.4 -99.1,Brazil -15.8 -47.9,Argentina -34.6 -58.4,Chile -33.45 -70.65,Colombia 4.7 -74.1,Peru -12.05 -77,UAE 24.45 54.4,Saudi Arabia 24.7 46.7,Iran 35.7 51.4,Israel 31.8 35.2,Egypt 30 31.2,Morocco 34 -6.85,South Africa -25.75 28.2,Nigeria 9.1 7.4,Kenya -1.3 36.8,India 28.6 77.2,Pakistan 33.7 73.05,China 39.9 116.4,Japan 35.7 139.7,South Korea 37.55 127,Indonesia -6.2 106.8,Vietnam 21 105.85,Thailand 13.75 100.5,Malaysia 3.15 101.7,Singapore 1.35 103.8,Philippines 14.6 121,Australia -35.3 149.1';
+const K=[['sm','🛒','Supermarket',['["shop"~"supermarket|convenience|grocery"]','["amenity"="marketplace"]'],/market|bazar|grocer|supermerc|supermarch|lebensm|bakkal|migros|magaz|магазин|маркет|продукт|超市|スーパー|마트|siêu|alış-?veriş|almaq/i],
+['ph','💊','Pharmacy',['["amenity"="pharmacy"]'],/pharm|medic|drug|pill|aptek|apteka|əczaxana|dərman|derman|ecza|ilaç|аптек|лекарств|таблетк|farmac|apothek|药|薬|약국|thuốc/i],
+['atm','🏧','ATM',['["amenity"="atm"]','["amenity"="bank"]'],/\batm\b|bank|cash|nağd|nagd|pul çək|bankomat|банкомат|налич|nakit|para çek|geld|cajero|distributeur|bancomat|现金|银行|銀行|현금/i],
+['cafe','☕','Cafe',['["amenity"~"cafe|restaurant|fast_food"]'],/hungry|hunger|\beat\b|food|restaurant|cafe|coffee|lunch|dinner|\bacam|acdım|ac qal|\baç|yemək|yemek|çay|qəhvə|kahve|голод|поесть|есть|кафе|кофе|ресторан|essen|faim|manger|hambre|comer|fame|mangiare|饿|吃|餐厅|お腹|食べ|배고|먹/i],
+['metro','🚇','Metro',['["station"="subway"]','["railway"="subway_entrance"]'],/metro|subway|underground|u-?bahn|\btube\b|station|stansiya|станци|метро|地铁|地下鉄|지하철/i],
+['hosp','🏥','Hospital',['["amenity"~"hospital|clinic"]'],/hospital|doctor|emergency|clinic|xəstəxana|həkim|hastane|doktor|klinik|больниц|врач|скорая|клиник|krankenhaus|arzt|hôpital|médecin|médico|ospedale|医院|医生|病院|병원/i]];
+const $=i=>document.getElementById(i),A=window.Android,T=n=>(D[lg]||D.en).split('|')[n];
+let lg=localStorage.fm_l||'en',me=null,st=0,nav=0,sel=null,res=[],pts=[],rm=[],sp=1.4,rl=[],mk,mk0;
+const H=(a,b,c,d)=>{const r=Math.PI/180,x=(c-a)*r,y=(d-b)*r,q=Math.sin(x/2)**2+Math.cos(a*r)*Math.cos(c*r)*Math.sin(y/2)**2;return 12742000*Math.asin(Math.sqrt(q))};
+const fd=m=>m<1000?Math.round(m)+' m':(m/1000).toFixed(m<10000?2:1)+' km';
+const ft=s=>{s=Math.max(1,Math.round(s/60));return s<60?s+' min':Math.floor(s/60)+' h '+s%60+' min'};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>'&#'+c.charCodeAt()+';');
+const say=x=>$('ms').textContent=x;
+const map=L.map('map',{zoomControl:false,attributionControl:false}).setView([40.4,49.9],13);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{maxZoom:19,subdomains:'abcd'}).addTo(map);
+const ml=L.layerGroup().addTo(map),pin=L.divIcon({className:'',html:'<div class="pn"></div>',iconSize:[18,18]});
+function ap(){const s=(D[lg]||D.en).split('|');document.documentElement.lang=lg;document.dir='ar fa he'.includes(lg)?'rtl':'ltr';
+[['t0',1],['b0',2],['b1',3],['t1',3],['go',5],['sp',6],['at',7]].forEach(([i,n])=>$(i).textContent=s[n]);$('q').placeholder=s[4]}
+$('lng').innerHTML=Object.keys(D).map(k=>`<option value="${k}">${D[k].split('|')[0]}</option>`).join('');$('lng').value=lg;
+$('cty').innerHTML=Z.split(',').map(s=>{const p=s.split(' '),n=p.pop(),a=p.pop();return`<option value="${a},${n}">${p.join(' ')}</option>`}).join('');
+$('lng').onchange=e=>{lg=e.target.value;localStorage.fm_l=lg;ap()};
+$('cty').onchange=e=>{map.setView(e.target.value.split(',').map(Number),10);$('set').classList.remove('on')};
+$('gear').onclick=()=>$('set').classList.add('on');$('cl').onclick=()=>$('set').classList.remove('on');
+$('loc').onclick=()=>me&&map.setView(me,17);$('hn').onclick=()=>$('sh').classList.toggle('min');
+$('ch').innerHTML=K.map(k=>`<button data-k="${k[0]}">${k[1]} ${k[2]}</button>`).join('');
+$('ch').onclick=e=>{const k=e.target.dataset.k;if(k)find(e.target.textContent,k)};
+$('send').onclick=()=>{const v=$('q').value.trim();if(v)find(v)};$('q').onkeydown=e=>e.key=='Enter'&&$('send').click();
+function perm(g){if(g){setTimeout(()=>$('gate').classList.remove('on','need'),800);gps()}else $('gate').classList.add('on','need')}
+window.onPerm=perm;
+$('b0').onclick=()=>A?(A.has()?perm(1):A.req()):gps();$('b1').onclick=()=>A&&A.settings();
+function gps(){if(st)return;st=1;if(A)A.start();else navigator.geolocation.watchPosition(p=>onLoc(p.coords.latitude,p.coords.longitude,p.coords.accuracy),()=>{st=0;perm(0)},{enableHighAccuracy:true,maximumAge:2000})}
+window.onLoc=(la,ln,ac)=>{const f=!me;me=[la,ln];if(f){mk0=L.circle(me,{radius:ac,stroke:false,fillColor:'#3B82F6',fillOpacity:.12}).addTo(map);mk=L.marker(me,{icon:L.divIcon({className:'',html:'<div class="me"></div>',iconSize:[20,20]}),zIndexOffset:900}).addTo(map);map.setView(me,17)}
+mk.setLatLng(me);mk0.setLatLng(me).setRadius(ac);if(nav)tick()};
+async function find(x,key){
+ if(!me){say('📡 GPS…');return}
+ const k=key||(K.find(c=>c[4].test(x))||[])[0],c=K.find(a=>a[0]==k);let f=c?[...c[3]]:[];
+ const br=(x.match(/bazar ?store|bravo|araz|neptun|migros|a101|bim|şok|carrefour|tesco|lidl|aldi/i)||[])[0];
+ if(br)f.push(`["name"~"${br.replace(' ','.?')}",i]`);
+ if(!f.length){const w=x.split(/\s+/).sort((a,b)=>b.length-a.length)[0].replace(/[^\p{L}\p{N}]/gu,'');if(!w)return;f=[`["name"~"${w}",i]`]}
+ say('🔎 …');let r=[];
+ for(const R of[50,300,1200,3000]){
+  const q=`[out:json][timeout:12];(${f.map(a=>`nwr${a}(around:${R},${me[0]},${me[1]});`).join('')});out center 80;`;
+  try{const j=await(await fetch('https://overpass-api.de/api/interpreter?data='+encodeURIComponent(q))).json();
+   r=j.elements.map(e=>{const la=e.lat??e.center?.lat,ln=e.lon??e.center?.lon,g=e.tags||{};return{la,ln,e:c?c[1]:'📍',n:g.name||g.brand||g.operator||(c?c[2]:x),a:[g['addr:street'],g['addr:housenumber']].filter(Boolean).join(' ')||g['addr:full']||g['addr:city']||'—',d:H(me[0],me[1],la,ln)}}).filter(p=>p.la!=null).sort((a,b)=>a.d-b.d)}catch(e){}
+  if(r.length>=5)break}
+ res=r.slice(0,20);ml.clearLayers();$('card').classList.remove('on');
+ if(!res.length){say('🤖 '+T(8));$('ls').innerHTML='';return}
+ say(`🤖 ${res[0].e} ${res[0].n} — ${fd(res[0].d)} · ${res.length}`);
+ $('ls').innerHTML=res.map((p,i)=>`<div class="row" data-i="${i}"><span>${p.e}</span><div><b>${esc(p.n)}</b><small>${esc(p.a)}</small></div><em>${fd(p.d)}</em></div>`).join('');
+ res.forEach((p,i)=>L.marker([p.la,p.ln],{icon:pin}).on('click',()=>card(i)).addTo(ml));
+ map.fitBounds([me,...res.slice(0,3).map(p=>[p.la,p.ln])],{paddingTopLeft:[40,80],paddingBottomRight:[40,330],maxZoom:18})}
+$('ls').onclick=e=>{const r=e.target.closest('.row');if(r)card(+r.dataset.i)};
+function card(i){sel=res[i];const d=H(me[0],me[1],sel.la,sel.ln);$('cn').textContent=sel.e+' '+sel.n;$('ca').textContent=sel.a;
+$('cm').textContent=`📍 ${fd(d)} · 🚶 ${ft(d/1.4)} · 🚗 ${ft(d/8.3)}`;$('card').classList.add('on');map.panTo([sel.la,sel.ln])}
+$('x').onclick=()=>$('card').classList.remove('on');
+$('go').onclick=async()=>{if(!me||!sel)return;let r=null;
+ for(const u of['https://routing.openstreetmap.de/routed-foot/route/v1/foot/','https://router.project-osrm.org/route/v1/driving/']){
+  try{const j=await(await fetch(`${u}${me[1]},${me[0]};${sel.ln},${sel.la}?overview=full&geometries=geojson`)).json();if(j.routes&&j.routes[0]){r=j.routes[0];break}}catch(e){}}
+ if(!r)return say('⚠ route');
+ pts=r.geometry.coordinates.map(c=>[c[1],c[0]]);rm=Array(pts.length).fill(0);for(let i=pts.length-2;i>=0;i--)rm[i]=rm[i+1]+H(pts[i][0],pts[i][1],pts[i+1][0],pts[i+1][1]);
+ sp=r.distance/r.duration||1.4;rl.forEach(l=>l.remove());
+ rl=[L.polyline(pts,{color:'#10B981',weight:18,opacity:.22}).addTo(map),L.polyline(pts,{color:'#10B981',weight:6,opacity:1,lineCap:'round',lineJoin:'round'}).addTo(map)];
+ map.fitBounds(rl[1].getBounds(),{padding:[70,70]});nav=1;document.body.classList.add('nav');$('card').classList.remove('on');tick()};
+function tick(){if(!nav||!me)return;let bi=0,bd=1e9;pts.forEach((p,i)=>{const x=H(me[0],me[1],p[0],p[1]);if(x<bd){bd=x;bi=i}});
+ const rem=bd+rm[bi],s=rem/sp;$('hd').textContent=fd(rem);$('he').textContent='ETA '+ft(s)+' · '+new Date(Date.now()+s*1000).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+ if(H(me[0],me[1],sel.la,sel.ln)<=25){stop();A?A.vib():navigator.vibrate&&navigator.vibrate([400,150,400]);$('ar').classList.add('on')}else map.panTo(me)}
+function stop(){nav=0;document.body.classList.remove('nav');rl.forEach(l=>l.remove());rl=[]}
+$('sp').onclick=stop;$('ok').onclick=()=>$('ar').classList.remove('on');
+ap();if(!A||A.has())perm(1);else{$('gate').classList.add('need');A.req()}
+</script></body></html>
